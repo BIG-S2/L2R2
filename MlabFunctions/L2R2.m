@@ -1,5 +1,5 @@
 function Output = L2R2(X,W,Z,Y0,r,MCMCpara,TypeCov) %#codegen
-%Generalized Reduced Rank Regression Via Decomposition
+%Bayesian longitudinal low-rank regression Via Decomposition
 %
 % Model: Y0 = U*(Delta.*Z)*V + EB + Zb + E
 %-----------------------------------------------------------------
