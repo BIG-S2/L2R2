@@ -3,7 +3,7 @@ Programs for L2R2 model in the manuscript "Bayesian longitudinal low-rank regres
 
 This L2R2 package is developed by Zhao-Hua Lu, Zakaria Khondker, and Hongtu Zhu from [BIG-S2 lab](http://odin.mdacc.tmc.edu/bigs2/). The package is also available on [BIG-S2 GitHub site](https://github.com/BIG-S2).
 
-
+![BIG-S2](https://github.com/zhaohualu/L2R2/BigS2.png "BIG-S2")
 
 To perform a joint analysis of multivariate  neuroimaging phenotypes and candidate genetic markers obtained from longitudinal  studies, we develop a Bayesian longitudinal low-rank regression (L2R2) model. The L2R2 model integrates three key methodologies: a low-rank matrix for approximating the high-dimensional regression coefficient matrices corresponding to the genetic main effects and their interactions with time, penalized splines for characterizing the overall time effect, and a sparse factor analysis model coupled with random effects for capturing within-subject spatio-temporal correlations of longitudinal phenotypes. Posterior computation proceeds via an efficient Markov chain Monte Carlo algorithm.
 
