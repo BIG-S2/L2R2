@@ -1,5 +1,5 @@
 function Output = L2R2(X,W,Z,Y0,r,MCMCpara,TypeCov) %#codegen
-%Bayesian longitudinal low-rank regression Via Decomposition
+%Generalized Reduced Rank Regression Via Decomposition
 %
 % Model: Y0 = U*(Delta.*Z)*V + EB + Zb + E
 %-----------------------------------------------------------------
@@ -29,25 +29,25 @@ function Output = L2R2(X,W,Z,Y0,r,MCMCpara,TypeCov) %#codegen
 % Output.G -- Coefficients of prognostic factors
 % Output.b -- random effects
 % Output.O -- Precision matrix of error
-% 
-% 
+%
+%
 % Estimated posterior mean
-% Output.PostU 
-% Output.PostV 
+% Output.PostU
+% Output.PostV
 % Output.PostDelta
 % Output.PostB -- coefficients between SNPs and ROIs
-% Output.PostG 
-% Output.Postb 
-% Output.PostO 
-% 
+% Output.PostG
+% Output.Postb
+% Output.PostO
+%
 % Estimated SE
-% Output.Usd 
-% Output.Vsd 
-% Output.Deltasd 
-% Output.Osd 
-% Output.Bsd 
-% Output.Gsd 
-% Output.bsd 
+% Output.Usd
+% Output.Vsd
+% Output.Deltasd
+% Output.Osd
+% Output.Bsd
+% Output.Gsd
+% Output.bsd
 
 % ---------------------
 % check input arguments
@@ -58,6 +58,18 @@ function Output = L2R2(X,W,Z,Y0,r,MCMCpara,TypeCov) %#codegen
 d = size(Y0,2);
 q = size(W,2);
 n = size(Z,2); % total dimension of the random effects
+
+if n == 0
+    RandEffFlag = 0;
+else
+    RandEffFlag = 1;
+end
+
+if q == 0
+    ProgFactorFlag = 0;
+else
+    ProgFactorFlag = 1;
+end
 
 nBurnin = MCMCpara.nBurnin;
 nCollect = MCMCpara.nCollect;
@@ -209,46 +221,56 @@ for iter = 1:(nBurnin + nCollect)
     B = U*diag(Delta)*V';
     
     %% Sampling spline coefficients G one columns at a time
-    Y = Y + W*G;
-    for k = 1:d
-        Sig_Gk = (WW*O(k,k)+tau_G*Iq)\eye(size(Iq));%inv(WW*O(k,k)+tau_G*Iq);
-        G_k = DropColumn(G,k);
-        Y_k = DropColumn(Y,k);
-        Ok = SliceColumn(O,k);
-        G(:,k) = (mvnrnd(Sig_Gk*W'*(Y(:,k)*O(k,k)+(Y_k - W*G_k)*Ok), Sig_Gk));
-    end;
-    Y = Y - W*G;
-    
-    
-    %% Sampling random effect b one columns at a time
-    Y = Y + Z*b;
-    
-    if ~OrthogonalZ
+    if ProgFactorFlag ==1
+        Y = Y + W*G;
         for k = 1:d
-            Sig_bk = (ZZ*O(k,k) + tau_b*In)\eye(size(In));%inv(ZZ*O(k,k) + tau_b*In);
-            b_k = DropColumn(b,k);
+            Sig_Gk = (WW*O(k,k)+tau_G*Iq)\eye(size(Iq));%inv(WW*O(k,k)+tau_G*Iq);
+            G_k = DropColumn(G,k);
             Y_k = DropColumn(Y,k);
             Ok = SliceColumn(O,k);
-            b(:,k) = (mvnrnd(Sig_bk*Z'*(Y(:,k)*O(k,k)+(Y_k - Z*b_k)*Ok), Sig_bk));
+            G(:,k) = (mvnrnd(Sig_Gk*W'*(Y(:,k)*O(k,k)+(Y_k - W*G_k)*Ok), Sig_Gk));
         end;
-    else
-        for k = 1:d
-            Sig_bk_diag = 1./(ZZ2*O(k,k) + tau_b)';
-            b_k = DropColumn(b,k);
-            Y_k = DropColumn(Y,k);
-            Ok = SliceColumn(O,k);
-            vtmp1 = Z'*(Y(:,k)*O(k,k)+(Y_k - Z*b_k)*Ok);
-            b(:,k) = vtmp1 .* Sig_bk_diag + randn(n,1).*sqrt(Sig_bk_diag);
-        end
+        Y = Y - W*G;
     end
     
-    E = Y - Z*b;
+    %% Sampling random effect b one columns at a time
+    if RandEffFlag ==1
+        
+        Y = Y + Z*b;
+        
+        if ~OrthogonalZ
+            for k = 1:d
+                Sig_bk = (ZZ*O(k,k) + tau_b*In)\eye(size(In));%inv(ZZ*O(k,k) + tau_b*In);
+                b_k = DropColumn(b,k);
+                Y_k = DropColumn(Y,k);
+                Ok = SliceColumn(O,k);
+                b(:,k) = (mvnrnd(Sig_bk*Z'*(Y(:,k)*O(k,k)+(Y_k - Z*b_k)*Ok), Sig_bk));
+            end;
+        else
+            for k = 1:d
+                Sig_bk_diag = 1./(ZZ2*O(k,k) + tau_b)';
+                b_k = DropColumn(b,k);
+                Y_k = DropColumn(Y,k);
+                Ok = SliceColumn(O,k);
+                vtmp1 = Z'*(Y(:,k)*O(k,k)+(Y_k - Z*b_k)*Ok);
+                b(:,k) = vtmp1 .* Sig_bk_diag + randn(n,1).*sqrt(Sig_bk_diag);
+            end
+        end
+        
+        Y = Y - Z*b;
+        
+    end
+    
+    E = Y;
     
     %% Sample the variances in the prior distributions of Delta, G, b
     tau_del = gamrnd(a0+r/2,1./(b0 + sum(Delta.^2)/2));
-    tau_G = gamrnd(c0+0.5*q*d,1./(d0 + sum(sum(G.^2))/2));
-    tau_b = gamrnd(e0+0.5*n*d,1./(f0 + sum(sum(b.^2))/2));
-    
+    if ProgFactorFlag ==1
+        tau_G = gamrnd(c0+0.5*q*d,1./(d0 + sum(sum(G.^2))/2));
+    end
+    if RandEffFlag ==1
+        tau_b = gamrnd(e0+0.5*n*d,1./(f0 + sum(sum(b.^2))/2));
+    end
     
     
     %% sampling parameters in the factor model for the covariance/precision matrix
