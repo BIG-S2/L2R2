@@ -4,8 +4,8 @@ path(path,'./MlabFunctions/');
 
 Y0 = dlmread(['./TestData/Y_1.txt'],'\t');Y0(:,size(Y0,2))=[];% N*d matrix of response variable 
 X = dlmread(['./TestData/X_1.txt'],'\t');X(:,size(X,2))=[]; % N*p matrix of genetic predictors
-W = dlmread(['./TestData/W_1.txt'],'\t');W(:,size(W,2))=[]; % N*q matrix of prognostic covariates
-Z = dlmread(['./TestData/Z_1.txt'],'\t');Z(:,size(Z,2))=[]; % N*(n*p_b) matrix of covariates of random effects
+W = dlmread(['./TestData/W_1.txt'],'\t');W(:,size(W,2))=[]; % N*q matrix of prognostic covariates, NaN is no prognostic factor is used.
+Z = dlmread(['./TestData/Z_1.txt'],'\t');Z(:,size(Z,2))=[]; % N*(n*p_b) matrix of covariates of random effects, NaN is no prognostic factor is used.
 
 TypeCov='Factor'; % Don't change
 r = 3; % Rank of the low rank representation of the coefficient matrix
@@ -13,8 +13,8 @@ MCMCpara.FacModR = 25; % factor model number of factors
 OutputFileName = 'Result';  %filename of output mat file
 
  
-MCMCpara.nBurnin = 4e3; % number of burn-in samples
-MCMCpara.nCollect = 4e3; % number of samples after burn-in
+MCMCpara.nBurnin = 4e0; % number of burn-in samples
+MCMCpara.nCollect = 4e0; % number of samples after burn-in
 
 %% Hyperparameters for parameters in the mean structure
 MeanStructHyperpar.a0 = 1e-6; % 1st gamma hyperparameter of tau_delta
@@ -79,6 +79,12 @@ MCMCpara.FactorModelPar = FactorModelPar;
 
 MCMCpara.Flags = Flags;
 
+if isnan(W)
+   W = zeros(size(Y0,1),0); 
+end
+if isnan(Z)
+   Z = zeros(size(Y0,1),0); 
+end
 
 
 %% RUN L2R2 %%
