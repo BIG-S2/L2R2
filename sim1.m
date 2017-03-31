@@ -1,3 +1,5 @@
+% Simulation Example
+
 path(path,'./MlabFunctions/');
 
 %% Input 
